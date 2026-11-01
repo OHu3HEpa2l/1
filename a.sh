@@ -15,10 +15,10 @@ echo "2. Fetching live deployment YAML..."
 kubectl get deployment $DEPLOYMENT -n $NAMESPACE -o yaml > current-deployment.yaml
 
 echo "3. Injecting mysqld-exporter sidecar using sed..."
-# Check if the sidecar is already injected to avoid duplicating it
 if ! grep -q "name: mysqld-exporter" current-deployment.yaml; then
-  # Define the YAML snippet with exact container-level indentation (6 spaces)
+  # Added a leading newline in the block to guarantee separation from the previous field
   read -r -d '' SIDECAR << 'EOF' || true
+
       - image: prom/mysqld-exporter:v0.17.2
         imagePullPolicy: IfNotPresent
         name: mysqld-exporter
@@ -37,7 +37,6 @@ if ! grep -q "name: mysqld-exporter" current-deployment.yaml; then
         terminationMessagePolicy: File
 EOF
 
-  # Escape special characters for sed and insert right before 'dnsPolicy:'
   ESCAPED_SIDECAR=$(printf '%s\n' "$SIDECAR" | sed 's/[\&/]/\\&/g' | sed '$!s/$/\\/')
   sed -i "/dnsPolicy:/i \\$ESCAPED_SIDECAR" current-deployment.yaml
   echo "Sidecar injected successfully."
