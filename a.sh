@@ -17,7 +17,7 @@ kubectl get deployment $DEPLOYMENT -n $NAMESPACE -o yaml > current-deployment.ya
 echo "3. Injecting mysqld-exporter sidecar using sed..."
 # Check if the sidecar is already injected to avoid duplicating it
 if ! grep -q "name: mysqld-exporter" current-deployment.yaml; then
-  # Define the YAML snippet to insert
+  # Define the YAML snippet with exact container-level indentation (6 spaces)
   read -r -d '' SIDECAR << 'EOF' || true
       - image: prom/mysqld-exporter:v0.17.2
         imagePullPolicy: IfNotPresent
@@ -49,7 +49,6 @@ echo "4. Applying patched deployment..."
 kubectl apply -f current-deployment.yaml
 
 echo "5. Patching service to add metrics port..."
-# Adds port 9104 if it doesn't already exist in the service spec
 kubectl patch svc $SERVICE -n $NAMESPACE --type=json -p='[
   {"op": "add", "path": "/spec/ports/-", "value": {"name": "metrics", "port": 9104, "protocol": "TCP", "targetPort": 9104}}
 ]' 2>/dev/null || echo "Service port 9104 likely already exists."
